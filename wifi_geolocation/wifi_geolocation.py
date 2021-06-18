@@ -24,7 +24,7 @@ class WifiGeolocationNode(Node):
 
         if not os.path.exists("/usr/bin/nmcli"):
             if not (os.stat("/sbin/iwlist").st_mode & stat.S_ISUID):
-                self.log.warn("Cannot perform a full Wi-Fi scan as a non-root user. Either run `sudo chmod 4755 /sbin/iwlist`, or run this node as root.")
+                self.log.warn("nmcli appears to not be installed. That's okay, but I cannot trigger a full Wi-Fi scan as a non-root user. Run `sudo chmod 4755 /sbin/iwlist` to resolve this.")
             self.has_nmcli = False
         else:
             self.has_nmcli = True
