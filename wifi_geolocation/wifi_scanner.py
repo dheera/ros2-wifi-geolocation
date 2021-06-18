@@ -8,10 +8,6 @@ import time
 import requests
 import stat
 
-status = "nmcli radio wifi"
-enable = "nmcli radio wifi on"
-iist = "nmcli dev wifi list"
-
 DEVNULL = open(os.devnull, 'w')
 
 class WifiScanner(object):
