@@ -11,6 +11,12 @@ import time
 import requests
 import stat
 
+from .wifi_scanner import WifiScanner
+
+status = "nmcli radio wifi"
+enable = "nmcli radio wifi on"
+iist = "nmcli dev wifi list"
+
 DEVNULL = open(os.devnull, 'w')
 
 class WifiGeolocationNode(Node):
@@ -18,21 +24,12 @@ class WifiGeolocationNode(Node):
         super().__init__(node_name = node_name)
         self.log = self.get_logger()
         self.clock = self.get_clock()
-
-        if not os.path.exists("/sbin/iwlist"):
-            self.log.fatal("Could not find /sbin/iwlist")
-            exit(1)
-
-        if not os.path.exists("/usr/bin/nmcli"):
-            if not (os.stat("/sbin/iwlist").st_mode & stat.S_ISUID):
-                self.log.warn("nmcli appears to not be installed. That's okay, but I cannot trigger a full Wi-Fi scan as a non-root user. Run `sudo chmod 4755 /sbin/iwlist` to resolve this.")
-            self.has_nmcli = False
-        else:
-            self.has_nmcli = True
+        self.scanner = WifiScanner()
 
         self.declare_parameter('provider', 'mozilla')
         self.declare_parameter('api_key', 'test')
         self.declare_parameter('interval', 10.0)
+
         self.provider = self.get_parameter('provider')._value
 
         if self.provider == "mozilla":
@@ -44,15 +41,28 @@ class WifiGeolocationNode(Node):
             exit(1)
 
         self.pub_fix = self.create_publisher(NavSatFix, "fix", 10)
-
         self.timer = self.create_timer(self.get_parameter('interval')._value, self.on_timer)
 
+        self.errors_scan = 0
+        self.errors_geolocation = 0
+
     def on_timer(self):
-        scan_data = self.scan()
+        scan_data = self.scanner.scan()
+        if not scan_data:
+            self.errors_scan += 1
+            if self.errors_scan > 0:
+                self.log.warn("could not scan after %d tries" % self.errors_scan)
+            return
+        self.errors_scan = 0
+
         result = self.geolocate(scan_data)
         if result is None:
-            self.log.warn("could not geolocate")
+            self.errors_geolocation += 1
+            if self.errors_geolocation > 5:
+                self.log.warn("could not geolocate after %d tries" % self.errors_geolocation)
             return
+
+        self.errors_geolocation = 0
 
         msg = NavSatFix()
         msg.latitude = result.get("location", {}).get("lat", 0.0)
@@ -76,39 +86,6 @@ class WifiGeolocationNode(Node):
             self.log.warn(traceback.format_exc())
             return None
         
-    def scan(self):
-        """
-        Scans for Wi-Fi access points and returns signal data in a list 
-        consistent with the format required for the wifiAccessPoints parameter of
-        the Google geolocation API.
-        """
-        if self.has_nmcli:
-            try:
-                response = subprocess.check_output(['/usr/bin/nmcli', 'dev', 'wifi', 'rescan'], stderr = DEVNULL)
-            except subprocess.CalledProcessError:
-                pass
-            time.sleep(1)
-
-        accesspoints = []
-        accesspoint = {}
-        response = subprocess.check_output(['/sbin/iwlist', 'scanning'], stderr = DEVNULL)
-        try:
-            for line in response.decode('utf-8').split('\n'):
-                line = line.strip()
-                if line.startswith('Cell'):
-                    if accesspoint != {}:
-                        accesspoints.append(accesspoint)
-                        accesspoint = {}
-                    accesspoint['macAddress'] = line.split('Address:')[1].strip()
-                    accesspoint['age'] = 0
-                if 'Signal level' in line:
-                    accesspoint['signalLevel'] = int(line.split('Signal level=')[1].split(' ')[0])
-                if 'Channel:' in line:
-                    accesspoint['channel'] = int(line.split('Channel:')[1].strip())
-        except (ValueError, IndexError, TypeError):
-            self.log.warn("iwlist returned strange data")
-        return accesspoints
-
 def main(args=None):
     rclpy.init(args=args)
     node = WifiGeolocationNode()
