@@ -28,7 +28,7 @@ class WifiGeolocationNode(Node):
 
         self.declare_parameter('provider', 'mozilla')
         self.declare_parameter('api_key', 'test')
-        self.declare_parameter('interval', 10.0)
+        self.declare_parameter('interval', 20.0)
 
         self.provider = self.get_parameter('provider')._value
 
