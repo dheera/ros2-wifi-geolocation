@@ -8,15 +8,24 @@ from sensor_msgs.msg import NavSatFix
 import sys
 import os
 import requests
+import stat
 
 DEVNULL = open(os.devnull, 'w')
 
 class WifiGeolocationNode(Node):
     def __init__(self, node_name = "wifi_geolocation_node"):
         super().__init__(node_name = node_name)
+        self.log = self.get_logger()
+
+        if not os.path.exists("/sbin/iwlist"):
+            self.log.fatal("Could not find /sbin/iwlist")
+            exit(1)
+
+        if not (os.stat("/sbin/iwlist") & stat.S_ISUID):
+            self.log.warn("Cannot perform a full Wi-Fi scan as a non-root user. Either run `sudo chmod 4755 /sbin/iwlist`, or run this node as root.")
+
         self.declare_parameter('provider', 'mozilla')
         self.provider = self.get_parameter('provider')
-        self.log = self.get_logger()
         self.clock = self.get_clock()
         self.timer = self.create_timer(1.0, self.on_timer)
         self.url = 'https://location.services.mozilla.com/v1/geolocate?key=test'
