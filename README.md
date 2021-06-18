@@ -12,6 +12,29 @@ This can be useful for if you operate robots indoors and need to fetch a lat/lon
 for mapping algorithms in places where GPS does not work well, e.g. in dense cities or under artificial structures, or maybe
 simply want to map/rosbag your roadtrip with a laptop that doesn't have GPS.
 
+This is NOT intended to provide fast 1 Hz updates of geolocation. Please do NOT abuse free APIs. If you need fast updates please
+use a paid API like Google and mind the charges that are associated with that.
+
+# Quick start
+
+```
+mkdir -p some_ws/src
+cd some_ws/src
+git clone https://github.com/dheera/ros2-wifi-geolocation
+cd ..
+colcon build
+ros2 run wifi_geolocation wifi_geolocation_node
+```
+
+Then in another window
+```
+ros2 topic echo /fix
+```
+
+You might need to wait 20-40 seconds to see the first results since the default value of "interval" is set conservatively.
+
+# Documentation
+
 ## Subscribers
 
 None.
