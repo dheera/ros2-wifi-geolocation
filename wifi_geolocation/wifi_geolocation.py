@@ -7,6 +7,7 @@ import subprocess
 from sensor_msgs.msg import NavSatFix
 import sys
 import os
+import time
 import requests
 import stat
 
@@ -21,8 +22,12 @@ class WifiGeolocationNode(Node):
             self.log.fatal("Could not find /sbin/iwlist")
             exit(1)
 
-        if not (os.stat("/sbin/iwlist").st_mode & stat.S_ISUID):
-            self.log.warn("Cannot perform a full Wi-Fi scan as a non-root user. Either run `sudo chmod 4755 /sbin/iwlist`, or run this node as root.")
+        if not os.path.exists("/usr/bin/nmcli"):
+            if not (os.stat("/sbin/iwlist").st_mode & stat.S_ISUID):
+                self.log.warn("Cannot perform a full Wi-Fi scan as a non-root user. Either run `sudo chmod 4755 /sbin/iwlist`, or run this node as root.")
+            self.has_nmcli = False
+        else:
+            self.has_nmcli = True
 
         self.declare_parameter('provider', 'mozilla')
         self.declare_parameter('interval', 10.0)
@@ -67,6 +72,13 @@ class WifiGeolocationNode(Node):
         consistent with the format required for the wifiAccessPoints parameter of
         the Google geolocation API.
         """
+        if self.has_nmcli:
+            try:
+                response = subprocess.check_output(['/usr/bin/nmcli', 'dev', 'wifi', 'rescan'], stderr = DEVNULL)
+            except subprocess.CalledProcessError:
+                pass
+            time.sleep(1)
+
         accesspoints = []
         accesspoint = {}
         response = subprocess.check_output(['/sbin/iwlist', 'scanning'], stderr = DEVNULL)
