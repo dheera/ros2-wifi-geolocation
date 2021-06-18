@@ -12,6 +12,10 @@ DEVNULL = open(os.devnull, 'w')
 
 class WifiScanner(object):
     def __init__(self):
+        self.error_count = {
+            "nmcli": 0,
+            "iwlist": 0,
+        }
 
         self.iwlist_path = None
         self.iwlist_suid = False
@@ -29,12 +33,9 @@ class WifiScanner(object):
         if os.path.exists("/usr/local/bin/nmcli"):
             self.nmcli_path = "/usr/local/bin/nmcli"
 
-        self.error_count = {
-            "nmcli": 0,
-            "iwlist": 0,
-        }
+        self.is_root = (os.getuid() == 0)
 
-        if (not self.nmcli_path) and self.iwlist_path and (not self.iwlist_suid):
+        if (not self.nmcli_path) and self.iwlist_path and (not self.iwlist_suid) and (not self.is_root):
             sys.stderr.write("I didn't find nmcli on your system; I found iwlist, so I can use that to scan, " + \
                 "but I can't trigger a full Wi-Fi scan with iwlist without root permissions. Either run this " + \
                 "code as root, OR run `sudo chmod 4755 %s` to enable full Wi-Fi scanning.\n" % self.iwlist_path)
@@ -134,12 +135,13 @@ class WifiScanner(object):
         return scan_results
 
 def main(args=None):
+    print("Testing mode")
     from pprint import pprint
     import time
     w = WifiScanner()
     while True:
         time.sleep(1)
-        w.scan()
+        print(w.scan())
 
 if __name__ == '__main__':
     main()
