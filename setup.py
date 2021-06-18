@@ -18,7 +18,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "wifi_geolocation = wifi_geolocation:main",
+            "wifi_geolocation_node = wifi_geolocation.wifi_geolocation:main",
         ],
     },
 )
