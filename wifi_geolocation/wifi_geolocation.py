@@ -80,7 +80,9 @@ class WifiGeolocationNode(Node):
             "wifiAccessPoints": scan_data,
         }
         try:
-            r = requests.post(self.url, json = data, timeout = 3)
+            r = requests.post(self.url, json = data, timeout = 3, headers = {
+                "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0",
+            })
             return json.loads(r.content.decode("utf-8"))
         except:
             self.log.warn(traceback.format_exc())
