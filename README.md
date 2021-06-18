@@ -59,3 +59,5 @@ the planet and indexing Wi-Fi networks by their GPS location.
 # Disclaimer
 
 If you use a paid API I am not responsible for any charges. Set "interval" appropriately and edit the code to put hard limits on API usage if you wish.
+
+I am not liable for any abuse of this code. Do not use it to abuse privacy or geolocate anyone without their consent.
