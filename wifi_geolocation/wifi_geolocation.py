@@ -21,13 +21,14 @@ class WifiGeolocationNode(Node):
             self.log.fatal("Could not find /sbin/iwlist")
             exit(1)
 
-        if not (os.stat("/sbin/iwlist") & stat.S_ISUID):
+        if not (os.stat("/sbin/iwlist").st_mode & stat.S_ISUID):
             self.log.warn("Cannot perform a full Wi-Fi scan as a non-root user. Either run `sudo chmod 4755 /sbin/iwlist`, or run this node as root.")
 
         self.declare_parameter('provider', 'mozilla')
+        self.declare_parameter('interval', 10.0)
         self.provider = self.get_parameter('provider')
         self.clock = self.get_clock()
-        self.timer = self.create_timer(1.0, self.on_timer)
+        self.timer = self.create_timer(self.get_parameter('interval')._value, self.on_timer)
         self.url = 'https://location.services.mozilla.com/v1/geolocate?key=test'
         self.pub_fix = self.create_publisher(NavSatFix, "fix", 10)
 
