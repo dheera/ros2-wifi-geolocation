@@ -77,9 +77,20 @@ class WifiScanner(object):
         if self._nmcli_wifi_status() != "enabled":
             self._nmcli_wifi_on()
         try:
-            subprocess.check_output(["nmcli", "dev", "wifi", "rescan"], stderr = DEVNULL)
-        except:
-            pass
+            subprocess.check_output(["nmcli", "dev", "wifi", "rescan"], stderr = subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            if "not authorized" in e.output.decode('utf-8'):
+                sys.stderr.write("nmcli found but not authorized to perform a rescan operation with nmcli.\n")
+                sys.stderr.write("I will still run, but results may be severely limited in accuracy. To fix this:\n\n")
+                sys.stderr.write("Create /etc/polkit-1/localauthority/50-local.d/10-nmcli-wifi-scan.pkla and put in it:\n\n")
+                sys.stderr.write("[Allow wi-fi scans for all users]\n")
+                sys.stderr.write("Identity=unix-user:*\n")
+                sys.stderr.write("Action=org.freedesktop.NetworkManager.wifi.scan\n")
+                sys.stderr.write("ResultAny=yes\n")
+                sys.stderr.write("ResultInactive=yes\n")
+                sys.stderr.write("ResultActive=yes\n\n")
+                sys.stderr.write("Then run:\n\n sudo service polkit restart && sudo service network-manager restart")
+                sys.stderr.flush()
 
         lines = subprocess.check_output(["nmcli", "-t", "dev", "wifi", "list"]).decode('utf-8').strip().split("\n")
 
