@@ -17,6 +17,7 @@ class WifiGeolocationNode(Node):
     def __init__(self, node_name = "wifi_geolocation_node"):
         super().__init__(node_name = node_name)
         self.log = self.get_logger()
+        self.clock = self.get_clock()
 
         if not os.path.exists("/sbin/iwlist"):
             self.log.fatal("Could not find /sbin/iwlist")
@@ -30,12 +31,21 @@ class WifiGeolocationNode(Node):
             self.has_nmcli = True
 
         self.declare_parameter('provider', 'mozilla')
+        self.declare_parameter('api_key', 'test')
         self.declare_parameter('interval', 10.0)
-        self.provider = self.get_parameter('provider')
-        self.clock = self.get_clock()
-        self.timer = self.create_timer(self.get_parameter('interval')._value, self.on_timer)
-        self.url = 'https://location.services.mozilla.com/v1/geolocate?key=test'
+        self.provider = self.get_parameter('provider')._value
+
+        if self.provider == "mozilla":
+            self.url = 'https://location.services.mozilla.com/v1/geolocate?key=%s' % self.get_parameter('api_key')._value
+        elif self.provider == "google":
+            self.url = 'https://www.googleapis.com/geolocation/v1/geolocate?key=%s' % self.get_parameter('api_key')._value
+        else:
+            self.log.fatal("invalid provider %s" % self.provider)
+            exit(1)
+
         self.pub_fix = self.create_publisher(NavSatFix, "fix", 10)
+
+        self.timer = self.create_timer(self.get_parameter('interval')._value, self.on_timer)
 
     def on_timer(self):
         scan_data = self.scan()
