@@ -89,7 +89,7 @@ class WifiScanner(object):
                 sys.stderr.write("ResultAny=yes\n")
                 sys.stderr.write("ResultInactive=yes\n")
                 sys.stderr.write("ResultActive=yes\n\n")
-                sys.stderr.write("Then run:\n\n sudo service polkit restart && sudo service network-manager restart")
+                sys.stderr.write("Then run:\n\n  sudo service polkit restart && sudo service network-manager restart\n\n\n")
                 sys.stderr.flush()
 
         lines = subprocess.check_output(["nmcli", "-t", "dev", "wifi", "list"]).decode('utf-8').strip().split("\n")
