@@ -17,6 +17,32 @@ use a paid API like Google and mind the charges that are associated with that.
 
 # Quick start
 
+## 0. Give permissions for your user to perform Wi-Fi scans
+
+### If your system has nmcli
+
+Put this in `/etc/polkit-1/localauthority/50-local.d/10-nmcli-wifi-scan.pkla`:
+
+```
+[Allow wi-fi scans for all users]
+Identity=unix-user:*
+Action=org.freedesktop.NetworkManager.wifi.scan
+ResultAny=yes
+ResultInactive=yes
+ResultActive=yes
+```
+
+And then run:
+```
+sudo service polkit restart && sudo service network-manager restart
+```
+
+### If your system has only iwlist
+
+```sudo chmod 4755 /sbin/iwlist```
+
+## 1. Install and run the node
+
 ```
 mkdir -p some_ws/src
 cd some_ws/src
