@@ -29,8 +29,10 @@ class WifiGeolocationNode(Node):
         self.declare_parameter('provider', 'mozilla')
         self.declare_parameter('api_key', 'test')
         self.declare_parameter('interval', 20.0)
+        self.declare_parameter('consider_ip', False)
 
         self.provider = self.get_parameter('provider')._value
+        self.consider_ip = self.get_parameter('consider_ip')._value
 
         if self.provider == "mozilla":
             self.url = 'https://location.services.mozilla.com/v1/geolocate?key=%s' % self.get_parameter('api_key')._value
@@ -76,7 +78,7 @@ class WifiGeolocationNode(Node):
     def geolocate(self, scan_data):
         data = {
             "radioType": "gsm",
-            "considerIp": "true",
+            "considerIp": self.consider_ip,
             "wifiAccessPoints": scan_data,
         }
         try:
