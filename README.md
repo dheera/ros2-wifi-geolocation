@@ -67,9 +67,10 @@ None.
 
 ## Parameters
 
-- **provider** : string : "mozilla" (default) or "google". Other values are invalid.
-- **api_key** : string : API key for the provider you choose. Default is "test" for Mozilla's free API. Use your Google API key ($5 for 1000 requests) if you choose to use Google's service.
-- **interval** : double : Interval in seconds between geolocation requests.
+- **provider** : string : "mozilla" or "google". Other values are invalid. Default "mozilla".
+- **api_key** : string : API key for the provider you choose. Use your Google API key ($5 for 1000 requests) if you choose to use Google's service. Default "test" (for Mozilla's free API).
+- **interval** : double : Interval in seconds between geolocation requests. Default 20.
+- **consider_ip** : bool : Should IP-based geolocation be performed? Default false.
 
 # FAQ
 
