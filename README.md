@@ -4,10 +4,6 @@ This is a ROS2 package that performs geolocation using a Wi-Fi scan and publishe
 It can use either the Mozilla API (free) or the Google API (more accurate; paid; requires specifying an API key) and an
 perform the scan using either `nmcli` (preferred) or `iwlist` to do the scan.
 
-If your system does NOT have `nmcli`, root permissions are needed to do a full scan with `iwlist`, so if that is the case,
-you will either need to run the node as root or run `sudo chmod 4755 /sbin/iwlist` and then it should work fine. Root access
-is not necessary if you have `nmcli`, which is most full Ubuntu distributions.
-
 This can be useful for if you operate robots indoors and need to fetch a lat/long, or if you need an initial geolocation guess
 for mapping algorithms in places where GPS does not work well, e.g. in dense cities or under artificial structures, or maybe
 simply want to map/rosbag your roadtrip with a laptop that doesn't have GPS.
@@ -16,6 +12,32 @@ This is NOT intended to provide fast 1 Hz updates of geolocation. Please do NOT 
 use a paid API like Google and mind the charges that are associated with that.
 
 # Quick start
+
+## 0. Give permissions for your user to perform Wi-Fi scans
+
+### If your system has nmcli
+
+Put this in `/etc/polkit-1/localauthority/50-local.d/10-nmcli-wifi-scan.pkla`:
+
+```
+[Allow wi-fi scans for all users]
+Identity=unix-user:*
+Action=org.freedesktop.NetworkManager.wifi.scan
+ResultAny=yes
+ResultInactive=yes
+ResultActive=yes
+```
+
+And then run:
+```
+sudo service polkit restart && sudo service network-manager restart
+```
+
+### If your system has only iwlist
+
+```sudo chmod 4755 /sbin/iwlist```
+
+## 1. Install and run the node
 
 ```
 mkdir -p some_ws/src
