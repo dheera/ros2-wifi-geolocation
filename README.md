@@ -1,6 +1,6 @@
-# ros2-wifi-geolocation
+# ros-wifi-geolocation
 
-This is a ROS2 package that performs geolocation using a Wi-Fi scan and publishes the result as a sensor_msgs/NavSatFix.
+This is a ROS/ROS2 package that performs geolocation using a Wi-Fi scan and publishes the result as a sensor_msgs/NavSatFix.
 It can use either the Mozilla API (free) or the Google API (more accurate; paid; requires specifying an API key) and an
 perform the scan using either `nmcli` (preferred) or `iwlist` to do the scan.
 

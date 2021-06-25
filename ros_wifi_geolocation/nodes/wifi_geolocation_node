@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+
+import json
+import rospy
+import subprocess
+from sensor_msgs.msg import NavSatFix
+import sys
+import os
+import time
+import requests
+import stat
+
+from wifi_scanner import WifiScanner
+
+DEVNULL = open(os.devnull, 'w')
+
+class WifiGeolocationNode(object):
+    def __init__(self, node_name = "wifi_geolocation_node"):
+        rospy.init_node(node_name)
+        self.scanner = WifiScanner()
+
+        self.provider = rospy.get_param('provider', 'mozilla')
+        self.consider_ip = rospy.get_param('consider_ip', False)
+        self.interval = rospy.get_param('interval', 20.0)
+        self.api_key = rospy.get_param('api_key', 'test')
+
+        if self.provider == "mozilla":
+            self.url = 'https://location.services.mozilla.com/v1/geolocate?key=%s' % self.api_key
+        elif self.provider == "google":
+            self.url = 'https://www.googleapis.com/geolocation/v1/geolocate?key=%s' % self.api_key
+        else:
+            rospy.logfatal("invalid provider %s" % self.provider)
+            exit(1)
+
+        self.pub_fix = rospy.Publisher("fix", NavSatFix, queue_size = 1)
+        self.timer = rospy.Timer(rospy.Duration(self.interval), self.on_timer)
+
+        self.errors_scan = 0
+        self.errors_geolocation = 0
+
+    def spin(self):
+        rospy.spin()
+
+    def on_timer(self, event):
+        scan_data = self.scanner.scan()
+        if not scan_data:
+            self.errors_scan += 1
+            if self.errors_scan > 0:
+                rospy.logwarn("could not scan after %d tries" % self.errors_scan)
+            return
+        self.errors_scan = 0
+
+        result = self.geolocate(scan_data)
+        if result is None:
+            self.errors_geolocation += 1
+            if self.errors_geolocation > 5:
+                rospy.logwarn("could not geolocate after %d tries" % self.errors_geolocation)
+            return
+
+        self.errors_geolocation = 0
+
+        msg = NavSatFix()
+        msg.latitude = result.get("location", {}).get("lat", 0.0)
+        msg.longitude = result.get("location", {}).get("lng", 0.0)
+        msg.header.stamp = rospy.Time.now()
+        accuracy = float(result.get("accuracy", 0.0))
+        msg.position_covariance = [accuracy, 0.0, 0.0, 0.0, accuracy, 0.0, 0.0, 0.0, accuracy ** 2]
+        msg.position_covariance_type = 1 # COVARANCE_TYPE_APPROXIMATED
+        self.pub_fix.publish(msg)
+
+    def geolocate(self, scan_data):
+        data = {
+            "radioType": "gsm",
+            "considerIp": self.consider_ip,
+            "wifiAccessPoints": scan_data,
+        }
+        try:
+            r = requests.post(self.url, json = data, timeout = 3, headers = {
+                "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0",
+            })
+            return json.loads(r.content.decode("utf-8"))
+        except:
+            rospy.logwarn(traceback.format_exc())
+            return None
+        
+if __name__ == '__main__':
+    WifiGeolocationNode().spin()
