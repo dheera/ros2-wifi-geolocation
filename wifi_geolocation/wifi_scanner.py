@@ -54,19 +54,36 @@ class WifiScanner(object):
 
         if self.error_count["nmcli"] <= self.error_count["iwlist"]:
             if self.nmcli_path:
-                scan_results = self._nmcli_wifi_scan()
+                try:
+                    scan_results = self._nmcli_wifi_scan()
+                except (TypeError, ValueError):
+                    self.error_count["nmcli"] += 1
+                    self.log_error("nmcli error: %s" % traceback.format_exc())
 
             if not scan_results and self.iwlist_path:
                 self.error_count["nmcli"] += 1
-                scan_results = self._iwlist_wifi_scan()
+                try:
+                    scan_results = self._iwlist_wifi_scan()
+                except (TypeError, ValueError):
+                    self.error_count["iwlist"] += 1
+                    self.log_error("iwlist error: %s" % traceback.format_exc())
 
         else:
             if self.iwlist_path:
-                scan_results = self._iwlist_wifi_scan()
+                try:
+                    scan_results = self._iwlist_wifi_scan()
+                except (TypeError, ValueError):
+                    self.error_count["iwlist"] += 1
+                    self.log_error("iwlist error: %s" % traceback.format_exc())
 
             if not scan_results and self.nmcli_path:
                 self.error_count["iwlist"] += 1
-                scan_results = self._nmcli_wifi_scan()
+                try:
+                    scan_results = self._nmcli_wifi_scan()
+                except (TypeError, ValueError):
+                    self.error_count["nmcli"] += 1
+                    self.log_error("nmcli error: %s" % traceback.format_exc())
+
         
         return scan_results
 
