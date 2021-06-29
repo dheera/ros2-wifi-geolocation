@@ -24,7 +24,7 @@ class WifiGeolocationNode(Node):
         super().__init__(node_name = node_name)
         self.log = self.get_logger()
         self.clock = self.get_clock()
-        self.scanner = WifiScanner()
+        self.scanner = WifiScanner(log_error = self.log.error)
 
         self.declare_parameter('provider', 'mozilla')
         self.declare_parameter('api_key', 'test')

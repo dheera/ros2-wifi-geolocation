@@ -11,7 +11,13 @@ import stat
 DEVNULL = open(os.devnull, 'w')
 
 class WifiScanner(object):
-    def __init__(self):
+    def __init__(self, log_error = None):
+        if not log_error:
+            def stderr_write(text):
+                sys.stderr.write(text + "\n")
+                sys.stderr.flush()
+            self.log_error = stderr_write
+
         self.error_count = {
             "nmcli": 0,
             "iwlist": 0,
@@ -36,10 +42,9 @@ class WifiScanner(object):
         self.is_root = (os.getuid() == 0)
 
         if (not self.nmcli_path) and self.iwlist_path and (not self.iwlist_suid) and (not self.is_root):
-            sys.stderr.write("I didn't find nmcli on your system; I found iwlist, so I can use that to scan, " + \
+            self.log_error("I didn't find nmcli on your system; I found iwlist, so I can use that to scan, " + \
                 "but I can't trigger a full Wi-Fi scan with iwlist without root permissions. Either run this " + \
-                "code as root, OR run `sudo chmod 4755 %s` to enable full Wi-Fi scanning.\n" % self.iwlist_path)
-            sys.stderr.flush()
+                "code as root, OR run `sudo chmod 4755 %s` to enable full Wi-Fi scanning." % self.iwlist_path)
 
         if not self.nmcli_path and not self.iwlist_path:
             raise Exception("I found neither nmcli nor iwlist found on your system. I don't know how to scan. Bye!")
@@ -80,17 +85,17 @@ class WifiScanner(object):
             subprocess.check_output(["nmcli", "dev", "wifi", "rescan"], stderr = subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
             if "not authorized" in e.output.decode('utf-8'):
-                sys.stderr.write("nmcli found but not authorized to perform a rescan operation with nmcli.\n")
-                sys.stderr.write("I will still run, but results may be severely limited in accuracy. To fix this:\n\n")
-                sys.stderr.write("Create /etc/polkit-1/localauthority/50-local.d/10-nmcli-wifi-scan.pkla and put in it:\n\n")
-                sys.stderr.write("[Allow wi-fi scans for all users]\n")
-                sys.stderr.write("Identity=unix-user:*\n")
-                sys.stderr.write("Action=org.freedesktop.NetworkManager.wifi.scan\n")
-                sys.stderr.write("ResultAny=yes\n")
-                sys.stderr.write("ResultInactive=yes\n")
-                sys.stderr.write("ResultActive=yes\n\n")
-                sys.stderr.write("Then run:\n\n  sudo service polkit restart && sudo service network-manager restart\n\n\n")
-                sys.stderr.flush()
+                log_msg = "nmcli found but not authorized to perform a rescan operation with nmcli.\n" + \
+                "I will still run, but results may be severely limited in accuracy. To fix this:\n\n" + \
+                    "Create /etc/polkit-1/localauthority/50-local.d/10-nmcli-wifi-scan.pkla and put in it:\n\n" + \
+                    "[Allow wi-fi scans for all users]\n" + \
+                    "Identity=unix-user:*\n" + \
+                    "Action=org.freedesktop.NetworkManager.wifi.scan\n" + \
+                    "ResultAny=yes\n" + \
+                    "ResultInactive=yes\n" + \
+                    "ResultActive=yes\n\n" + \
+                    "Then run:\n\n  sudo service polkit restart && sudo service network-manager restart\n\n\n"
+                self.log_error(log_msg)
 
         lines = subprocess.check_output(["nmcli", "-t", "dev", "wifi", "list"]).decode('utf-8').strip().split("\n")
 
@@ -141,7 +146,7 @@ class WifiScanner(object):
                 if 'Channel:' in line:
                     result['channel'] = int(line.split('Channel:')[1].strip())
         except (ValueError, IndexError, TypeError):
-            self.log.warn("iwlist returned strange data")
+            self.log_error("iwlist returned strange data")
 
         return scan_results
 
