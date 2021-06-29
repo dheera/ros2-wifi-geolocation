@@ -7,6 +7,7 @@ import os
 import time
 import requests
 import stat
+import traceback
 
 DEVNULL = open(os.devnull, 'w')
 
